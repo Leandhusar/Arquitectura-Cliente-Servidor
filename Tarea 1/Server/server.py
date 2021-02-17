@@ -5,6 +5,11 @@ import os, sys
 socket = zmq.Context().socket(zmq.REP)
 socket.bind('tcp://*:5555')
 
+try:
+    os.mkdir('Files')
+except:
+    pass
+
 def encodeFile(file):
     try:
         base64_image = base64.b64encode(open(file, 'rb').read())
