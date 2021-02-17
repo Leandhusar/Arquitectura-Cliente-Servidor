@@ -6,15 +6,12 @@ socket = zmq.Context().socket(zmq.REQ)
 socket.connect('tcp://localhost:5555')
 
 def encodeFile(file):
-    base64_image = base64.b64encode(open(file, 'rb').read())
-    base64_image = base64_image.decode('utf-8')
-    base64_image_b = base64_image.encode('utf-8')
+    base64_image_b = open(file, 'rb').read()
     return base64_image_b
 
 def saveFile(file, new_file_name):
     with open(new_file_name, 'wb') as new_file:
-        decode_new_file = base64.decodebytes(file)
-        new_file.write(decode_new_file)
+        new_file.write(file)
 
 def downloadFile(file_name, local_file_name):
     msg = [b'Download', file_name.encode('utf-8')]
@@ -36,6 +33,7 @@ def getFilesList():
     socket.send_multipart(msg)
     msg = socket.recv_multipart()
     print('Server directories:')
+    msg.pop(0)
     for dir in msg:
         print("- " + dir.decode('utf-8'))
 

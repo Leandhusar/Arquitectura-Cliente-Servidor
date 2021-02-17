@@ -12,9 +12,7 @@ except:
 
 def encodeFile(file):
     try:
-        base64_image = base64.b64encode(open(file, 'rb').read())
-        base64_image = base64_image.decode('utf-8')
-        base64_image_b = base64_image.encode('utf-8')
+        base64_image_b = open(file, 'rb').read()
         return base64_image_b
     except:
         return False
@@ -22,15 +20,14 @@ def encodeFile(file):
 def saveFile(file, new_file_name):
     try:
         with open(new_file_name, 'wb') as new_file:
-            decode_new_file = base64.decodebytes(file)
-            new_file.write(decode_new_file)
+            new_file.write(file)
     except:
         pass
 
 while True:
     msg = socket.recv_multipart()
-    print(msg)
     order = msg[0].decode('utf-8')
+    print(order)
 
     if order == 'Download':
         file_name = "Files/" + msg[1].decode('utf-8')
@@ -38,7 +35,7 @@ while True:
         if encode_file_var == False:
             msg = [b'Empty']
         else:
-            msg = [b'Ok', encodeFile(file_name)]
+            msg = [b'Ok', encode_file_var]
         socket.send_multipart(msg)
     elif order == 'Upload':
         file_data = msg[1]
@@ -48,7 +45,7 @@ while True:
         socket.send_multipart(msg)
     elif order == 'Listdir':
         dirs = os.listdir('Files/')
-        msg = []
+        msg = [b'Ok']
         for dir in dirs:
             msg.append(dir.encode('utf-8'))
         socket.send_multipart(msg)
