@@ -21,6 +21,7 @@ def saveFile(file, new_file_name):
     try:
         with open(new_file_name, 'wb') as new_file:
             new_file.write(file)
+            new_file.close()
     except:
         pass
 

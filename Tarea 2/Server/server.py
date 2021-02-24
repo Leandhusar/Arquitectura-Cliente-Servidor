@@ -1,0 +1,43 @@
+import zmq
+import os, sys
+
+socket = zmq.Context().socket(zmq.REP)
+socket.bind('tcp://*:5555')
+
+#Creates the Files folder. If it already exists, pass
+try:
+    os.mkdir('Files')
+except:
+    pass
+
+#Encodes a song file and returns its bytes
+#If the is an error during the process, return Error message
+def encodeFile(file):
+    try:
+        base64_image_b = open(file, 'rb').read()
+        return base64_image_b
+    except:
+        return 'Error'
+
+#-------------------------------------------------------------------------
+while True:
+    msg = socket.recv_multipart()
+    order = msg[0].decode('utf-8')
+    print(order)
+
+    if order == 'Download':
+        file_name = "Files/" + msg[1].decode('utf-8') + ".mp3"
+        encode_file_var = encodeFile(file_name)
+        if encode_file_var == 'Error':
+            msg = [b'Error']
+        else:
+            msg = [b'Ok', encode_file_var]
+        socket.send_multipart(msg)
+
+    elif order == 'Listdir':
+        dirs = os.listdir('Files/')
+        msg = [b'Ok']
+        for dir in dirs:
+            dir = dir.replace('.mp3', '')
+            msg.append(dir.encode('utf-8'))
+        socket.send_multipart(msg)

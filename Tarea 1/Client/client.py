@@ -12,6 +12,7 @@ def encodeFile(file):
 def saveFile(file, new_file_name):
     with open(new_file_name, 'wb') as new_file:
         new_file.write(file)
+        #new_file.close()
 
 def downloadFile(file_name, local_file_name):
     msg = [b'Download', file_name.encode('utf-8')]
