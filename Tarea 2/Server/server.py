@@ -19,11 +19,23 @@ def encodeFile(file):
     except:
         return 'Error'
 
+def getSongSize(song_path):
+    return os.stat(song_path).st_size
+
+def getChunkBytes(song_path, pointer):
+    try:
+        song = open(song_path, 'rb')
+        song.seek(pointer, 0)
+        chunk = song.read(1000)
+        song.close()
+        return chunk
+    except:
+        return b'Error'
+
 #-------------------------------------------------------------------------
 while True:
     msg = socket.recv_multipart()
     order = msg[0].decode('utf-8')
-    print(order)
 
     if order == 'Download':
         file_name = "Files/" + msg[1].decode('utf-8') + ".mp3"
@@ -32,6 +44,18 @@ while True:
             msg = [b'Error']
         else:
             msg = [b'Ok', encode_file_var]
+        socket.send_multipart(msg)
+
+    elif order == 'Size':
+        song_path = "Files/" + msg[1].decode('utf-8') + ".mp3"
+        msg = [b'Ok', getSongSize(song_path).to_bytes(4, 'big')]
+        socket.send_multipart(msg)
+    
+    elif order == 'Get Chunk':
+        print(msg[1].decode())
+        pointer = int.from_bytes(msg[2], 'big')
+        song_path = "Files/" + msg[1].decode('utf-8') + ".mp3"
+        msg = [b'Ok', getChunkBytes(song_path, pointer)]
         socket.send_multipart(msg)
 
     elif order == 'Listdir':

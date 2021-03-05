@@ -7,11 +7,6 @@ mixer.init()
 socket = zmq.Context().socket(zmq.REQ)
 socket.connect('tcp://localhost:5555')
 
-def saveFile(file):
-    with open('temporal.mp3', 'wb') as new_file:
-        new_file.write(file)
-        new_file.close()
-
 def downloadFile(file_name):
     msg = [b'Download', file_name.encode('utf-8')]
     socket.send_multipart(msg)
@@ -23,6 +18,28 @@ def downloadFile(file_name):
         print(msg[0].decode('utf-8'))
         return False
 
+def loadSongBytes(file_name):
+    try:
+        song_bytes = ''
+        pointer = 0
+        msg = [b'Size', file_name.encode('utf-8')]
+        socket.send_multipart(msg)
+        msg = socket.recv_multipart()
+        song_size = int.from_bytes(msg[1], 'big')
+
+        while pointer < song_size:
+            msg = [b'Get Chunk', file_name.encode('utf-8'), pointer.to_bytes(4, 'big')]
+            socket.send_multipart(msg)
+            msg = socket.recv_multipart()
+            chunk_bytes = msg[1].decode('iso-8859-1')
+            song_bytes += chunk_bytes
+            pointer += 1000
+
+        song_bytes = song_bytes.encode('iso-8859-1')
+        return song_bytes
+    except:
+        return b''
+
 def getFilesList():
     msg = [b'Listdir']
     socket.send_multipart(msg)
@@ -33,7 +50,7 @@ def getFilesList():
         print("- " + dir.decode('utf-8'))
 
 def play(song):
-    buffer = downloadFile(song)
+    buffer = loadSongBytes(song)
     try:
         mixer.music.load(io.BytesIO(buffer))
         mixer.music.set_volume(0.5)
@@ -120,6 +137,5 @@ def main():
             print(songs, playlist_number)
         else:
             print("Invalid command")
-
 
 main()
