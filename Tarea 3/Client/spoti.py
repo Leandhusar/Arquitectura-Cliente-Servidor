@@ -183,9 +183,10 @@ class ConsumerThread(threading.Thread):
 
     def run(self):
         finished = False
+        stop = False
         while not finished:
             for e in event.get():
-                if e.type == MUSIC_END and len(q_data) > 0:
+                if e.type == MUSIC_END and len(q_data) > 0 and not stop:
                     mixer.music.load(q_data[0])
                     globals()['q_data'].pop(0)
                     q.get()
@@ -198,6 +199,7 @@ class ConsumerThread(threading.Thread):
                     globals()['attended_task'] = True
                 
                 if command == "play":
+                    stop = False
                     globals()['command'] = ""
                     globals()['attended_task'] = True
                     play()
@@ -224,6 +226,7 @@ class ConsumerThread(threading.Thread):
                     globals()['attended_task'] = True
 
                 if command == "stop":
+                    stop = True
                     mixer.music.stop()
                     globals()['command'] = ""
                     globals()['attended_task'] = True
