@@ -61,20 +61,11 @@ def loadSongBytes(file_name):
         return b''
 
 def play():
-    mixer.music.stop()
     mixer.music.load(q_data[0])
     mixer.music.set_endevent(MUSIC_END)
     globals()['q_data'].pop(0)
     q.get()
     mixer.music.play()
-
-    while len(q_data) > 0 and not interrupted:
-        for e in event.get():
-            if e.type == MUSIC_END:
-                mixer.music.load(q_data[0])
-                globals()['q_data'].pop(0)
-                q.get()
-                mixer.music.play()
 
 #----------------------------------------------------------------------------------
 
@@ -111,31 +102,24 @@ class ProducerThread(threading.Thread):
                 globals()['attended_task'] = True
 
             elif command == "pause":
-                mixer.music.pause()
-                #globals()['attended_task'] = True
+                globals()['command'] = "pause"
 
             elif command == "resume":
-                mixer.music.unpause()
-                globals()['attended_task'] = True
+                globals()['command'] = "resume"
 
             #starts playing the playlist
             elif command == "next":
                 globals()['command'] = "next"
-                globals()['attended_task'] = True
             
             #starts playing the playlist
             elif command == "play":
-                globals()['interrupted'] = True
-                time.sleep(0.5)
-                globals()['interrupted'] = False
+                mixer.music.stop()
                 globals()['command'] = "play"
-                globals()['attended_task'] = True
 
             #stops playback
             elif command == "stop":
                 globals()['interrupted'] = True
                 mixer.music.stop()
-                globals()['interrupted'] = False
                 globals()['attended_task'] = True
             
             elif command == "exit":
@@ -168,6 +152,13 @@ class ConsumerThread(threading.Thread):
 
     def run(self):
         while True:
+            for e in event.get():
+                if e.type == MUSIC_END and len(q_data) > 0:
+                    mixer.music.load(q_data[0])
+                    globals()['q_data'].pop(0)
+                    q.get()
+                    mixer.music.play()
+
             if not attended_task:
                 if command == "enqueue":
                     globals()['q_data'].append(io.BytesIO(loadSongBytes(q.queue[-1])))
@@ -179,10 +170,17 @@ class ConsumerThread(threading.Thread):
                     globals()['attended_task'] = True
                     play()
                 
+                if command == "pause":
+                    mixer.music.pause()
+                    globals()['command'] = ""
+                    globals()['attended_task'] = True
+                
+                if command == "resume":
+                    mixer.music.unpause()
+                    globals()['command'] = ""
+                    globals()['attended_task'] = True
+
                 if command == "next":
-                    globals()['interrupted'] = True
-                    time.sleep(0.5)
-                    globals()['interrupted'] = False
                     globals()['command'] = ""
                     globals()['attended_task'] = True
                     play()
