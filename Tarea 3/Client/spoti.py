@@ -58,7 +58,7 @@ def loadSongBytes(file_name):
             msg = socket.recv_multipart()
             chunk_bytes = msg[1].decode('iso-8859-1')
             song_bytes += chunk_bytes
-            pointer += 100000
+            pointer += 500000
 
         song_bytes = song_bytes.encode('iso-8859-1')
         return song_bytes
