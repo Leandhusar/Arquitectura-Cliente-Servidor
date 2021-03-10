@@ -118,14 +118,12 @@ class ProducerThread(threading.Thread):
 
             #stops playback
             elif command == "stop":
-                globals()['interrupted'] = True
-                mixer.music.stop()
-                globals()['attended_task'] = True
+                globals()['command'] = "stop"
             
             elif command == "exit":
-                mixer.music.stop()
                 finished = True
-                sys.exit()
+                globals()['command'] = "exit"
+
             
             elif command == "vars":
                 print(globals()['command'], attended_task)
@@ -151,7 +149,8 @@ class ConsumerThread(threading.Thread):
         return
 
     def run(self):
-        while True:
+        finished = False
+        while not finished:
             for e in event.get():
                 if e.type == MUSIC_END and len(q_data) > 0:
                     mixer.music.load(q_data[0])
@@ -184,6 +183,18 @@ class ConsumerThread(threading.Thread):
                     globals()['command'] = ""
                     globals()['attended_task'] = True
                     play()
+                
+                if command == "exit":
+                    mixer.music.stop()
+                    finished = True
+                    globals()['command'] = ""
+                    globals()['attended_task'] = True
+
+                if command == "stop":
+                    mixer.music.stop()
+                    finished = True
+                    globals()['command'] = ""
+                    globals()['attended_task'] = True
 
                 
                 
