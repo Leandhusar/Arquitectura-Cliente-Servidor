@@ -23,6 +23,11 @@ attended_task = True
 q = queue.Queue()
 q_data = []
 
+#this list contains each playlist created by user
+playlist_list = []
+data_playlist_list = []
+playlist_index = 0
+selected = 0
 
 #-------------------------------- functions ---------------------------------------
 
@@ -86,6 +91,34 @@ class ProducerThread(threading.Thread):
 
             if command == "list songs":
                 getFilesList()
+                globals()['attended_task'] = True
+
+            #creates a new empty playlist
+            elif command == "save playlist":
+                if len(playlist_list) > 0:
+                    globals()['playlist_index'] += 1
+                globals()['playlist_list'].append(queue.Queue())
+                globals()['data_playlist_list'].append([])
+                for title in q.queue:
+                    globals()['playlist_list'][playlist_index].put(title)
+                for data in q_data:
+                    globals()['data_playlist_list'][playlist_index].append(data)
+                
+                globals()['q'] = queue.Queue()
+                globals()['q_data'] = []
+                globals()['attended_task'] = True
+            
+            #stands on the selected playlist using a number
+            elif command[0:4] == "use ":
+                globals()['selected'] = int(command[-1])
+                globals()['q'] = queue.Queue()
+                globals()['q_data'] = []
+
+                for title in playlist_list[selected].queue:
+                    q.put(title)
+                for data in data_playlist_list[selected]:
+                    globals()['q_data'].append(data)
+
                 globals()['attended_task'] = True
 
             elif command[0:8] == "enqueue ":
@@ -192,7 +225,6 @@ class ConsumerThread(threading.Thread):
 
                 if command == "stop":
                     mixer.music.stop()
-                    finished = True
                     globals()['command'] = ""
                     globals()['attended_task'] = True
 
