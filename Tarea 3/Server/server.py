@@ -26,7 +26,7 @@ def getChunkBytes(song_path, pointer):
     try:
         song = open(song_path, 'rb')
         song.seek(pointer, 0)
-        chunk = song.read(100000)
+        chunk = song.read(500000)
         song.close()
         return chunk
     except:
@@ -36,6 +36,7 @@ def getChunkBytes(song_path, pointer):
 while True:
     msg = socket.recv_multipart()
     order = msg[0].decode('utf-8')
+    print(order)
 
     if order == 'Download':
         file_name = "Files/" + msg[1].decode('utf-8') + ".mp3"
