@@ -4,8 +4,12 @@ import random
 import queue
 import zmq
 import os, sys
-from pygame import mixer
+from pygame import mixer, USEREVENT, event, display
 import io
+
+display.init()
+MUSIC_END = USEREVENT + 1
+interrupted = False
 
 #Setting socket and connection to server
 socket = zmq.Context().socket(zmq.REQ)
@@ -56,13 +60,21 @@ def loadSongBytes(file_name):
     except:
         return b''
 
-def play(song_bytes):
-    try:
-        mixer.music.load(io.BytesIO(song_bytes))
-        mixer.music.set_volume(0.5)
-        mixer.music.play()
-    except:
-        pass
+def play():
+    mixer.music.stop()
+    mixer.music.load(q_data[0])
+    mixer.music.set_endevent(MUSIC_END)
+    globals()['q_data'].pop(0)
+    q.get()
+    mixer.music.play()
+
+    while len(q_data) > 0 and not interrupted:
+        for e in event.get():
+            if e.type == MUSIC_END:
+                mixer.music.load(q_data[0])
+                globals()['q_data'].pop(0)
+                q.get()
+                mixer.music.play()
 
 #----------------------------------------------------------------------------------
 
@@ -100,26 +112,40 @@ class ProducerThread(threading.Thread):
 
             elif command == "pause":
                 mixer.music.pause()
+                #globals()['attended_task'] = True
 
             elif command == "resume":
                 mixer.music.unpause()
+                globals()['attended_task'] = True
 
             #starts playing the playlist
             elif command == "next":
                 globals()['command'] = "next"
+                globals()['attended_task'] = True
             
             #starts playing the playlist
             elif command == "play":
+                globals()['interrupted'] = True
+                time.sleep(0.5)
+                globals()['interrupted'] = False
                 globals()['command'] = "play"
+                globals()['attended_task'] = True
 
             #stops playback
             elif command == "stop":
+                globals()['interrupted'] = True
                 mixer.music.stop()
+                globals()['interrupted'] = False
+                globals()['attended_task'] = True
             
             elif command == "exit":
                 mixer.music.stop()
                 finished = True
                 sys.exit()
+            
+            elif command == "vars":
+                print(globals()['command'], attended_task)
+                globals()['attended_task'] = True
                 
             #shows the playlist saved on the client
             elif command == "show playlist":
@@ -144,17 +170,22 @@ class ConsumerThread(threading.Thread):
         while True:
             if not attended_task:
                 if command == "enqueue":
-                    globals()['q_data'].append(loadSongBytes(q.queue[-1]))
+                    globals()['q_data'].append(io.BytesIO(loadSongBytes(q.queue[-1])))
                     globals()['command'] = ""
                     globals()['attended_task'] = True
                 
-                if command == "play" or command == "next":
-                    song_bytes = q_data[0]
-                    globals()['q_data'].pop(0)
-                    q.get()
-                    play(song_bytes)
+                if command == "play":
                     globals()['command'] = ""
                     globals()['attended_task'] = True
+                    play()
+                
+                if command == "next":
+                    globals()['interrupted'] = True
+                    time.sleep(0.5)
+                    globals()['interrupted'] = False
+                    globals()['command'] = ""
+                    globals()['attended_task'] = True
+                    play()
 
                 
                 
